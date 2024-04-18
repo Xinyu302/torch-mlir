@@ -1842,6 +1842,47 @@ def RepeatModule_basic(module, tu: TestUtils):
 # ==============================================================================
 
 
+class RepeatInterleaveSelfIntModule(torch.nn.Module):
+
+    def __init__(self):
+        super().__init__()
+
+    @export
+    @annotate_args([
+        None,
+        ([3, 4, 5], torch.float32, True),
+    ])
+    def forward(self, x):
+        return x.repeat_interleave(2, 1)
+
+
+@register_test_case(module_factory=lambda: RepeatInterleaveSelfIntModule())
+def RepeatInterleaveSelfIntModule_basic(module, tu: TestUtils):
+    module.forward(tu.rand(3, 4, 5))
+
+# ==============================================================================
+
+
+class RepeatInterleaveSelfIntNoDimModule(torch.nn.Module):
+
+    def __init__(self):
+        super().__init__()
+
+    @export
+    @annotate_args([
+        None,
+        ([3, 4, 5], torch.float32, True),
+    ])
+    def forward(self, x):
+        return x.repeat_interleave(2)
+
+
+@register_test_case(module_factory=lambda: RepeatInterleaveSelfIntNoDimModule())
+def RepeatInterleaveSelfIntNoDimModule_basic(module, tu: TestUtils):
+    module.forward(tu.rand(3, 4, 5))
+
+# ==============================================================================
+
 class TileSmallDimsSizeModule(torch.nn.Module):
 
     def __init__(self):
@@ -2634,6 +2675,27 @@ class IndexTensorStaticModule(torch.nn.Module):
 @register_test_case(module_factory=lambda: IndexTensorStaticModule())
 def IndexTensorStaticModule_basic(module, tu: TestUtils):
     module.forward(tu.rand(4, 5), tu.randint(2, 3, high=4))
+
+
+class IndexTensorBoolStaticModule(torch.nn.Module):
+
+    def __init__(self):
+        super().__init__()
+
+    @export
+    @annotate_args([
+        None,
+        ([4, 5], torch.float32, True),
+        ([2, 3], torch.bool, True),
+    ])
+    def forward(self, x, index):
+        return torch.ops.aten.index(x, (index, ))
+
+
+@register_test_case(module_factory=lambda: IndexTensorBoolStaticModule())
+def IndexTensorBoolStaticModule_basic(module, tu: TestUtils):
+    module.forward(tu.rand(4, 5), tu.randint(2, 3, low=0, high=2))
+
 
 # ==============================================================================
 
