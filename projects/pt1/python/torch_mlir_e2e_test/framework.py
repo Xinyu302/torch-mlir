@@ -323,7 +323,7 @@ def compile_and_run_test(test: Test, config: TestConfig, verbose=False) -> Any:
                       golden_trace=clone_trace(golden_trace))
 
 
-def run_tests(tests: List[Test], config: TestConfig, sequential=False, verbose=False) -> List[TestResult]:
+def run_tests(tests: List[Test], config: TestConfig, sequential=True, verbose=False) -> List[TestResult]:
     """Invoke the given `Test`'s with the provided `TestConfig`."""
     num_processes = min(int(mp.cpu_count() * 0.8) + 1, len(tests))
     try:
@@ -350,6 +350,7 @@ def run_tests(tests: List[Test], config: TestConfig, sequential=False, verbose=F
     # machinery. In theory it should work, but any crash in the testing process
     # seems to cause a cascade of failures resulting in undecipherable error
     # messages.
+    sequential = True
     if num_processes == 1 or sequential:
         return [compile_and_run_test(test, config, verbose) for test in tests]
 

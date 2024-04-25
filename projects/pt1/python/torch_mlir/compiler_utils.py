@@ -43,7 +43,12 @@ def run_pipeline_with_repro_report(module,
                 ctx.enable_multithreading(False)
                 pm.enable_ir_printing()
             pm.run(module.operation)
+            breakpoint()
     except Exception as e:
+        print(f"Error in {module_name} compile")
+        print(str(e))
+        print()
+        print()
         # TODO: More robust.
         # - don't arbitrarily clutter up /tmp. When a test suite has many
         #   tests, this can be a big disk cost (also, /tmp/ is frequently a
@@ -56,6 +61,13 @@ def run_pipeline_with_repro_report(module,
         with open(filename, 'w') as f:
             f.write(asm_for_error_report)
         debug_options="-mlir-print-ir-after-all -mlir-disable-threading"
+        cmd = f"torch-mlir-opt -pass-pipeline='{pipeline}' {filename} -mlir-print-ir-after-failure -mlir-disable-threading 2>&1"
+        print(cmd)
+        # os.system(cmd)
+        import subprocess
+        p = subprocess.run(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        print(p.stdout.decode())
+        print(p.stderr.decode())
         # Put something descriptive here even if description is empty.
         description = description or f"{module_name} compile"
 
