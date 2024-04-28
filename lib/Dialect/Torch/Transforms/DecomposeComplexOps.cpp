@@ -4108,6 +4108,30 @@ public:
 };
 } // namespace
 
+namespace {
+class DecomposeAtenThresholdOp : public OpRewritePattern<AtenThresholdOp> {
+public:
+  using OpRewritePattern::OpRewritePattern;
+  LogicalResult matchAndRewrite(AtenThresholdOp op,
+                                PatternRewriter &rewriter) const override {
+    Location loc = op.getLoc();
+    Value input = op.getSelf();
+    Value threshold = op.getThreshold();
+    Value value = op.getValue();
+    BaseTensorType inputType = input.getType().cast<BaseTensorType>();
+
+    // out = input > threshold ? input : value
+    auto boolResType = inputType.getWithSizesAndDtype(inputType.getSizes(),
+                                                      rewriter.getI1Type());
+    Value condition =
+        rewriter.create<AtenGtScalarOp>(loc, boolResType, input, threshold);
+    rewriter.replaceOpWithNewOp<AtenWhereScalarOtherOp>(
+        op, op.getType(), condition, input, value);
+    return success();
+  }
+};
+} // namespace
+
 // Decompose aten.std.dim to sqrt(var.dim(x))
 namespace {
 class DecomposeAtenStdDimOp : public OpRewritePattern<AtenStdDimOp> {
@@ -7694,6 +7718,7 @@ public:
     addPatternIfTargetOpIsIllegal<DecomposeAtenTraceOp>(patterns);
     addPatternIfTargetOpIsIllegal<DecomposeAtenHardswishOp>(patterns);
     addPatternIfTargetOpIsIllegal<DecomposeAtenSoftplusOp>(patterns);
+    addPatternIfTargetOpIsIllegal<DecomposeAtenThresholdOp>(patterns);
     addPatternIfTargetOpIsIllegal<DecomposeAtenSiluOp>(patterns);
     addPatternIfTargetOpIsIllegal<
         DecomposeConstantTensorNewLikeOp<AtenNewZerosOp, AtenZerosOp>>(
