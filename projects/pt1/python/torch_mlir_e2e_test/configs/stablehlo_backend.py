@@ -16,6 +16,18 @@ from .utils import (
     recursively_convert_from_numpy,
 )
 
+from torch_mlir.ir import StringAttr
+
+
+def get_module_name_for_debug_dump(module):
+    """Gets a name suitable for a debug dump.
+
+    The name is not guaranteed to be unique.
+    """
+    if not "torch.debug_module_name" in module.operation.attributes:
+        return "UnnammedModule"
+    return StringAttr(module.operation.attributes["torch.debug_module_name"]).value
+
 
 class StablehloBackendTestConfig(TestConfig):
     """Base class for TestConfig's that are implemented with StableHLO.
@@ -33,6 +45,10 @@ class StablehloBackendTestConfig(TestConfig):
         module = torchscript.compile(
             program, example_args, output_type="stablehlo", verbose=verbose
         )
+        module_name = get_module_name_for_debug_dump(module)
+        module_asm = module.operation.get_asm()
+        with open(f"/tmp/stablehlo/{module_name}.mlir", "w") as f:
+            f.write(module_asm)
 
         return self.backend.compile(module)
 
